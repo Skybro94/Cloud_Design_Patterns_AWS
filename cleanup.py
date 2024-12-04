@@ -1,36 +1,30 @@
-from main import EC2Manager
+from typing import List
 import os
 
-def cleanup_resources(ec2_manager: EC2Manager):
+def cleanup_resources(instances: List[str], security_groups: List[str], key_name: str, ssh_key_path: str, ec2_client):
     """Cleanup all AWS resources."""
     try:
         # Terminate instances
-        instances = [inst.instance.id for inst in ec2_manager.instances]
-        ec2_manager.ec2_client.terminate_instances(InstanceIds=instances)
+        ec2_client.terminate_instances(InstanceIds=instances)
         print(f"Termination of instances {instances} initiated.")
 
         # Wait for instances to terminate
-        waiter = ec2_manager.ec2_client.get_waiter("instance_terminated")
+        waiter = ec2_client.get_waiter("instance_terminated")
         waiter.wait(InstanceIds=instances)
         print("Instances terminated.")
 
         # Delete security groups
-        for group_id in [
-            ec2_manager.cluster_security_group_id,
-            ec2_manager.proxy_security_group_id,
-            ec2_manager.trusted_host_security_group_id,
-            ec2_manager.gatekeeper_security_group_id,
-        ]:
+        for group_id in security_groups:
             try:
-                ec2_manager.ec2_client.delete_security_group(GroupId=group_id)
+                ec2_client.delete_security_group(GroupId=group_id)
                 print(f"Deleted security group: {group_id}")
             except Exception as sg_error:
                 print(f"Error deleting security group {group_id}: {sg_error}")
 
         # Delete key pair
         try:
-            ec2_manager.ec2_client.delete_key_pair(KeyName=ec2_manager.key_name)
-            os.remove(ec2_manager.ssh_key_path)
+            ec2_client.delete_key_pair(KeyName=key_name)
+            os.remove(ssh_key_path)
             print("Deleted key pair and local key file.")
         except Exception as key_error:
             print(f"Error deleting key pair or key file: {key_error}")

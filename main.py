@@ -650,6 +650,18 @@ class EC2Manager:
         images = response["Images"]
         images.sort(key=lambda x: x["CreationDate"], reverse=True)
         return images[0]["ImageId"]
+    
+    def cleanup(self):
+        """Trigger cleanup of all resources."""
+        instances = [inst.instance.id for inst in self.instances()]
+        security_groups = [
+            self.cluster_security_group_id,
+            self.proxy_security_group_id,
+            self.trusted_host_security_group_id,
+            self.gatekeeper_security_group_id,
+        ]
+        cleanup_resources(instances, security_groups, self.key_name, self.ssh_key_path, self.ec2_client)
+
 
 
 # Launch instances
