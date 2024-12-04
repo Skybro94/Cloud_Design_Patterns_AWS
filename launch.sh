@@ -22,7 +22,7 @@ echo "Using Python executable: $PYTHON_CMD"
 # Check if cleanup argument is provided
 if [ "$1" == "cleanup" ]; then
     echo "Running cleanup process..."
-    $PYTHON_CMD main.py cleanup
+    $PYTHON_CMD cleanup.py cleanup
 else
     echo "Running deployment process..."
     $PYTHON_CMD main.py

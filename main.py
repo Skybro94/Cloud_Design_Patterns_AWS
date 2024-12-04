@@ -628,6 +628,29 @@ class EC2Manager:
             )
 
         return answers
+    
+    def save_resources(self):
+        """Save created resources to a file."""
+        resources = {
+            "key_name": self.key_name,
+            "key_path": self.ssh_key_path,
+            "security_groups": [
+                self.cluster_security_group_id,
+                self.proxy_security_group_id,
+                self.trusted_host_security_group_id,
+                self.gatekeeper_security_group_id,
+            ],
+            "instances": [
+                inst.instance.id for inst in [self.manager_instance]
+                + self.worker_instances
+                + [self.proxy_instance, self.trusted_host_instance, self.gatekeeper_instance]
+            ],
+        }
+        with open("resources.json", "w") as file:
+            json.dump(resources, file, indent=4)
+        print("Resources saved to resources.json.")
+
+
 
 
     def _get_latest_ubuntu_ami(self) -> str:
@@ -650,7 +673,7 @@ class EC2Manager:
         images = response["Images"]
         images.sort(key=lambda x: x["CreationDate"], reverse=True)
         return images[0]["ImageId"]
-    
+        
     def cleanup(self):
         """Trigger cleanup of all resources."""
         instances = [inst.instance.id for inst in self.instances()]
@@ -685,6 +708,10 @@ for ec2_instance in all_instances:
 print("All instances are running.")
 time.sleep(10)
 
+# Save resources to file
+ec2_manager.save_resources()
+
+# Add inbound rules
 ec2_manager.add_inbound_rules()
 
 # Save public ips to a JSON file
